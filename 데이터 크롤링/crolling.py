@@ -27,9 +27,6 @@ while True:
         html = driver.page_source
         soup = bs(html, "html.parser")
 
-        # 모든 기사의 날짜 확인
-
-
         # "더보기" 버튼 클릭
         search.click()
         print("Button clicked, loading more content...")
@@ -80,19 +77,35 @@ for article_all in articles_all:
         driver.get(full_url)
         time.sleep(2)  # 페이지 로딩 대기
 
-        # 댓글 추출 (더보기 버튼 클릭 없이 현재 로드된 댓글만 가져옴)
-        comment_elements = driver.find_elements(By.CSS_SELECTOR, ".u_cbox_comment")
+        # "댓글 보기" 버튼 클릭
+        try:
+            view_comment_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "u_cbox_btn_view_comment"))
+            )
+            view_comment_button.click()
+            time.sleep(2)  # 댓글 페이지 로딩 대기
+        except Exception as e:
+            print(f"Failed to click comment view button: {e}")
+            continue
+
+        # 댓글 추출
         comments_with_likes = []
-        
+        comment_elements = driver.find_elements(By.CSS_SELECTOR, ".u_cbox_contents")
+
         for comment_element in comment_elements:
-            comment_text = comment_element.find_element(By.CSS_SELECTOR, ".u_cbox_text_wrap").text
-            like_element = comment_element.find_element(By.CSS_SELECTOR, "em.u_cbox_cnt_recomm")
+            comment_text = comment_element.text
+
+            # "클린봇" 댓글 필터링
+            if "클린봇이 부적절한 표현을 감지한 댓글입니다." in comment_text:
+                continue
+
+            like_element = comment_element.find_element(By.XPATH, "../following-sibling::div//em[@class='u_cbox_cnt_recomm']")
             like_count = int(like_element.text.replace(",", "")) if like_element.text.isdigit() else 0
+
             comments_with_likes.append([comment_text, like_count])
 
-            
-        # 기사 제목과 댓글, 좋아요 저장
-        politics_list.append((title, comments_with_likes))
+        # 기사 제목, 날짜, 댓글 총 개수, 댓글 배열 저장
+        politics_list.append((title, datetime_text, comment_count, comments_with_likes))
     except Exception as e:
         print(f"Failed to load page: {full_url}, Error: {e}")
 
@@ -103,14 +116,14 @@ driver.quit()
 output_file = "politics_articles_comments_with_likes.csv"
 with open(output_file, mode="w", newline="", encoding="utf-8") as file:
     writer = csv.writer(file)
-    
+
     # 헤더 작성
-    writer.writerow(["Index", "Title", "Comments"])
-    
+    writer.writerow(["Index", "Title", "Date", "Total Comments", "Comments"])
+
     # 데이터 작성
-    for idx, (title, comments_with_likes) in enumerate(politics_list, 1):
+    for idx, (title, datetime_text, comment_count, comments_with_likes) in enumerate(politics_list, 1):
         # 댓글과 좋아요를 대괄호 포함된 2차원 배열 형식으로 변환
         formatted_comments = str(comments_with_likes)
-        writer.writerow([idx, title, formatted_comments])
+        writer.writerow([idx, title, datetime_text, comment_count, formatted_comments])
 
 print(f"Data saved to {output_file}")
