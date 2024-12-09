@@ -5,6 +5,7 @@ hdfs dfs -put output.txt /user/maria_dev/mapreduce/output.txt
 
 
 <too300으로키워드 추출후 기사+댓글로 만들고  > -> 100개 뽑아서 시각화결과
+기사 제목은 이미 간단명료하게 작성되어 있다고 생각했음
 ![기사 제목기반](https://github.com/user-attachments/assets/5ebb16f1-4215-4996-ab60-f0e29772d8e2)
 <기사 제목기반>
 ![댓글기반](https://github.com/user-attachments/assets/7fbac2e0-2cd6-4c1e-b736-1717a4ed3771)
