@@ -1,0 +1,19 @@
+-- 1. 데이터 로드 (CSV 형식 데이터 로드)
+parsed_comments = LOAD 'hdfs:///user/maria_dev/BDP_final/parsed_comments_output.csv/merged_output.csv'
+                  USING PigStorage(',')
+                  AS (index:INT, title:CHARARRAY, date:CHARARRAY, total_comments:INT, comment:CHARARRAY, likes:INT);
+
+-- 2. 총 댓글 수가 300개 이상인 기사 필터링
+filtered_articles = FILTER parsed_comments BY total_comments >= 300;
+
+-- 3. 좋아요 수 기준으로 정렬
+sorted_by_likes = ORDER filtered_articles BY likes DESC;
+
+-- 4. 상위 30개의 댓글 추출
+top_30_comments = LIMIT sorted_by_likes 100;
+
+-- 5. 필요한 컬럼만 선택 (index, title, comment, likes)
+result = FOREACH top_30_comments GENERATE index, title, comment, likes;
+
+-- 6. 결과 저장
+STORE result INTO 'hdfs:///user/maria_dev/pig_result/top_filtered_comments' USING PigStorage(',');
